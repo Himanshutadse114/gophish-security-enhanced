@@ -34,7 +34,7 @@ setup.bat
 
 3. Access the application:
    - Admin Dashboard: https://localhost:8443
-   - Landing Pages: http://localhost:8080
+  
 
 ---
 
