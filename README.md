@@ -4,6 +4,16 @@ A security-enhanced fork of GoPhish with all known vulnerabilities patched.
 
 ---
 
+## Official GoPhish Repository
+
+This project is based on the official GoPhish open-source project:
+
+- **Official Repository:** https://github.com/gophish/gophish
+- **Official Website:** https://getgophish.com
+- **Official Documentation:** https://docs.getgophish.com
+
+---
+
 ## About GoPhish
 
 GoPhish is an open-source phishing simulation platform designed to help organizations assess and improve their security awareness. It provides a comprehensive framework for launching simulated phishing campaigns, allowing security professionals to test how employees respond to phishing attempts in a controlled environment. The platform is widely used by penetration testers, security teams, and IT administrators to evaluate the human element of cybersecurity defenses.
@@ -34,7 +44,6 @@ setup.bat
 
 3. Access the application:
    - Admin Dashboard: https://localhost:8443
-  
 
 ---
 
@@ -75,4 +84,11 @@ All vulnerabilities identified during the security assessment have been patched.
 
 ---
 
+## Acknowledgments
+
+This project is a security-hardened fork of the original GoPhish project created by Jordan Wright. All credit for the core functionality goes to the original GoPhish team and contributors.
+
+- Original Author: Jordan Wright
+- Original Project: https://github.com/gophish/gophish
+- License: MIT License
 
