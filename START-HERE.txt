@@ -1,0 +1,113 @@
+============================================================
+  Gophish - Installation Guide for New Computers
+============================================================
+
+WELCOME!
+  This guide will help you install Gophish on a completely
+  new Windows computer with nothing installed.
+
+============================================================
+  STEP 1: Install Docker Desktop
+============================================================
+
+Docker Desktop is required to run Gophish.
+
+1. Download Docker Desktop:
+   - Go to: https://www.docker.com/products/docker-desktop
+   - Or search "Docker Desktop Windows" in your browser
+   - Click "Download for Windows"
+
+2. Run the installer:
+   - Double-click the downloaded file (Docker Desktop Installer.exe)
+   - Follow the installation wizard
+   - When asked, check "Use WSL 2 instead of Hyper-V" (recommended)
+   - Complete the installation
+
+3. Restart your computer:
+   - The installer will prompt you to restart
+   - Save any work and restart
+
+4. After restart:
+   - Start Docker Desktop from Start Menu
+   - Search for "Docker Desktop" and click it
+   - Wait for Docker to start (1-2 minutes)
+   - Look for whale icon in system tray (bottom right)
+   - Icon should be steady (not animated) when ready
+
+============================================================
+  STEP 2: Run Prerequisites Check (Optional)
+============================================================
+
+Before installing Gophish, you can check if everything is ready:
+
+1. Double-click: check-requirements.bat
+2. This will verify Docker is installed and running
+3. If all checks pass, proceed to Step 3
+
+============================================================
+  STEP 3: Install Gophish
+============================================================
+
+1. Double-click: setup.bat
+2. The script will:
+   - Check if Docker is ready
+   - Build the Gophish image (5-10 minutes first time)
+   - Start the container
+   - Show you login credentials
+
+3. Wait for setup to complete
+   - First time: 5-10 minutes
+   - Subsequent times: 1-2 minutes
+
+============================================================
+  STEP 4: Access Gophish
+============================================================
+
+After setup completes:
+
+1. Open your web browser
+2. Go to: https://localhost:8443
+3. You'll see a security warning (this is normal)
+   - Click "Advanced" or "Details"
+   - Click "Proceed to localhost" or "Continue"
+4. Login with credentials shown in setup.bat output
+
+============================================================
+  TROUBLESHOOTING
+============================================================
+
+Problem: "Docker is not installed"
+Solution: Follow Step 1 above to install Docker Desktop
+
+Problem: "Docker daemon is not running"
+Solution: Start Docker Desktop from Start Menu and wait
+
+Problem: "This site can't be reached"
+Solution: Wait 60-90 seconds after setup, services need time to start
+
+Problem: Security warning in browser
+Solution: This is normal - click "Advanced" then "Proceed"
+
+Problem: Port already in use
+Solution: Close other applications using ports 8443 or 8080
+
+For more help, see README.md
+
+============================================================
+  QUICK REFERENCE
+============================================================
+
+Files in this folder:
+  - START-HERE.txt (this file)
+  - setup.bat (main installation script)
+  - check-requirements.bat (check if ready)
+  - README.md (detailed documentation)
+
+Commands (after installation):
+  - View logs: docker logs gophish
+  - Stop: docker stop gophish
+  - Start: docker start gophish
+  - Remove: docker stop gophish && docker rm gophish
+
+============================================================
+

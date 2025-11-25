@@ -1,0 +1,8 @@
+gophish-data/node_modules
+gophish-data/.git
+gophish-data/*.db
+gophish-data/*.log
+.git
+.gitignore
+setup.bat
+

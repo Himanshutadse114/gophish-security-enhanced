@@ -1,0 +1,75 @@
+# Multi-stage build for unified Gophish + Nginx image
+# Stage 1: Build JavaScript assets
+FROM node:latest AS build-js
+
+RUN npm install gulp gulp-cli -g
+
+WORKDIR /build
+COPY gophish-data/ .
+RUN npm install --only=dev
+RUN gulp
+
+# Stage 2: Build Golang binary
+FROM golang:1.15.2 AS build-golang
+
+WORKDIR /go/src/github.com/gophish/gophish
+COPY gophish-data/ .
+RUN go get -v && go build -v
+
+# Stage 3: Runtime container with Gophish + Nginx
+FROM debian:stable-slim
+
+# Install dependencies
+RUN apt-get update && \
+	apt-get install --no-install-recommends -y \
+		jq \
+		libcap2-bin \
+		ca-certificates \
+		nginx \
+		supervisor \
+		openssl \
+		wget \
+		&& apt-get clean \
+		&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Create app user
+RUN useradd -m -d /opt/gophish -s /bin/bash app
+
+# Setup Gophish
+WORKDIR /opt/gophish
+COPY --from=build-golang /go/src/github.com/gophish/gophish/ ./
+COPY --from=build-js /build/static/js/dist/ ./static/js/dist/
+COPY --from=build-js /build/static/css/dist/ ./static/css/dist/
+COPY --from=build-golang /go/src/github.com/gophish/gophish/config.json ./
+RUN chown -R app:app /opt/gophish
+RUN setcap 'cap_net_bind_service=+ep' /opt/gophish/gophish
+
+# Setup Nginx
+RUN mkdir -p /etc/nginx/ssl /etc/nginx/conf.d /var/log/nginx
+COPY nginx/nginx.conf /etc/nginx/nginx.conf
+COPY nginx/conf.d/gophish.conf /etc/nginx/conf.d/gophish.conf
+
+# Copy scripts
+COPY scripts/generate-ssl.sh /usr/local/bin/generate-ssl.sh
+COPY scripts/start.sh /usr/local/bin/start.sh
+COPY scripts/run-gophish.sh /usr/local/bin/run-gophish.sh
+COPY scripts/supervisord.conf /etc/supervisor/supervisord.conf
+RUN chmod +x /usr/local/bin/generate-ssl.sh /usr/local/bin/start.sh /usr/local/bin/run-gophish.sh
+
+# Create log directories
+RUN mkdir -p /var/log/gophish && \
+    chown -R app:app /var/log/gophish
+
+# Create config.json.tmp file
+RUN touch /opt/gophish/config.json.tmp && chown app:app /opt/gophish/config.json.tmp
+
+# Expose ports
+EXPOSE 80 8080 8081 8443
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD wget --quiet --tries=1 --spider --no-check-certificate https://localhost:8443 2>/dev/null || exit 1
+
+# Start supervisor
+CMD ["/usr/local/bin/start.sh"]
+

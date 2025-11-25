@@ -1,0 +1,88 @@
+setup.bat
+
+docker exec -it gophish bash
+
+cd /opt/gophish
+
+ls -la gophish.db
+
+mv gophish.db gophish.db.backup
+
+rm -f gophish.db
+
+exit
+
+docker stop gophish
+docker rm gophish
+docker volume rm gophish-data
+
+setup.bat
+
+docker exec -it gophish bash
+
+tail -f /var/log/gophish/error.log
+
+
+============================================================
+DOCKER COMMANDS TO START GOPHISH
+============================================================
+
+1. Build the Docker image (first time only):
+docker build -f Dockerfile.unified -t gophish-unified:latest .
+
+2. Run the container:
+docker run -d --name gophish -p 8443:8443 -p 8080:8080 -v gophish-data:/opt/gophish gophish-unified:latest
+
+3. Fix permissions after starting:
+docker exec gophish chown -R app:app /opt/gophish
+docker exec gophish chmod -R 775 /opt/gophish
+
+4. Check if container is running:
+docker ps
+
+5. View logs to get initial password:
+docker logs gophish
+
+6. Access the application:
+Admin Dashboard: https://localhost:8443
+Landing Pages: http://localhost:8080
+
+============================================================
+COMMON DOCKER COMMANDS
+============================================================
+
+Start existing container:
+docker start gophish
+
+Stop container:
+docker stop gophish
+
+Restart container:
+docker restart gophish
+
+Remove container:
+docker stop gophish && docker rm gophish
+
+Access container shell:
+docker exec -it gophish bash
+
+View real-time logs:
+docker logs -f gophish
+
+Check container status:
+docker ps -a | findstr gophish
+
+Remove image and rebuild:
+docker stop gophish
+docker rm gophish
+docker rmi gophish-unified:latest
+docker build -f Dockerfile.unified -t gophish-unified:latest .
+
+============================================================
+QUICK START (All-in-One)
+============================================================
+
+Run setup.bat for automated setup, or execute these commands:
+
+docker build -f Dockerfile.unified -t gophish-unified:latest . && docker run -d --name gophish -p 8443:8443 -p 8080:8080 -v gophish-data:/opt/gophish gophish-unified:latest && timeout /t 45 && docker logs gophish
+

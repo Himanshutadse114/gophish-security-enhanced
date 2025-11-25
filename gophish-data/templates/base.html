@@ -1,0 +1,227 @@
+{{ define "base" }}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Gophish - Phishing Toolkit">
+    <meta name="author" content="Jordan Wright (http://github.com/jordan-wright)">
+    <link rel="shortcut icon" href="/images/favicon.ico">
+
+    <title>{{ .Title }} - Gophish</title>
+
+    <link href="/css/dist/gophish.css" rel="stylesheet" type="text/css">
+    <link href='https://fonts.googleapis.com/css?family=Roboto:700,500' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,300,600,700' rel='stylesheet' type='text/css'>
+    <script>
+        {{if .User}}
+    var user = {
+        api_key : {{ .User.ApiKey }},
+        username : {{ .User.Username }}
+    }
+    {{end}}
+    {{if .Token}}
+        var csrf_token = {{.Token}}
+    {{end}}
+    </script>
+</head>
+
+<body>
+    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <img class="navbar-logo" src="/images/logo_inv_small.png" />
+                <a class="navbar-brand" href="/">&nbsp;gophish</a>
+            </div>
+            <div class="navbar-collapse collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    {{if .User}}
+                    <li>
+                        <span id="session-timer" style="color: #fff; padding: 15px; font-size: 12px; display: inline-block;">
+                            <i class="fa fa-clock-o"></i> <span id="timer-display">15:00</span>
+                        </span>
+                    </li>
+                    {{end}}
+                    <li>
+                        {{if .User}}
+                        <div class="btn-group" id="navbar-dropdown">
+                            <a class="btn btn-primary" href="/settings"><i class="fa fa-user"></i> {{.User.Username}}</a>
+                            <a class="btn btn-primary dropdown-toggle" href="/logout">
+                                <i class="fa fa-sign-out"></i>
+                            </a>
+                        </div>
+                        {{else}}
+                        <a href="/login">
+                            <button type="button" class="btn btn-primary">Login</button>
+                        </a>
+                        {{end}}
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    {{template "nav" .}}
+    {{template "body" .}}
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="/js/dist/vendor.min.js"></script>
+    <script src="/js/dist/app/gophish.min.js"></script>
+    <script>
+        (function () {
+            try {
+                var path = window.location.pathname || "/";
+                var isAuthPage = path === "/login" || path === "/reset_password";
+                // On auth pages, clear any existing per-tab token to ensure a clean start
+                if (isAuthPage) {
+                    try { sessionStorage.removeItem("tabToken"); } catch (e) {}
+                    return; // no enforcement on auth pages
+                }
+                // If the server injected a logged-in user, ensure a tab token exists
+                if (typeof user !== "undefined" && user) {
+                    if (!sessionStorage.getItem("tabToken")) {
+                        var array = new Uint8Array(16);
+                        (window.crypto || window.msCrypto).getRandomValues(array);
+                        var hex = Array.from(array).map(function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
+                        sessionStorage.setItem("tabToken", hex);
+                    }
+                    return; // allow access
+                }
+                // No user injected -> not authenticated, redirect to login
+                window.location.replace("/login");
+            } catch (_) {
+                // Conservative: redirect to login
+                window.location.replace("/login");
+            }
+        })();
+    </script>
+    <script>
+        // Session Timer - 15 minute countdown
+        (function() {
+            // Only run timer if user is logged in
+            if (typeof user === "undefined" || !user) {
+                return;
+            }
+
+            var SESSION_TIMEOUT = 15 * 60; // 15 minutes in seconds
+            var remainingTime = SESSION_TIMEOUT;
+            var timerInterval = null;
+            var warningShown = false;
+
+            function updateTimerDisplay() {
+                var minutes = Math.floor(remainingTime / 60);
+                var seconds = remainingTime % 60;
+                var display = minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+                
+                var timerElement = document.getElementById("timer-display");
+                var sessionTimerElement = document.getElementById("session-timer");
+                
+                if (timerElement) {
+                    timerElement.textContent = display;
+                }
+                
+                // Color coding based on time remaining
+                if (sessionTimerElement) {
+                    if (remainingTime <= 120) { // Less than 2 minutes - RED
+                        sessionTimerElement.style.color = "#ff4444";
+                        sessionTimerElement.style.fontWeight = "bold";
+                    } else if (remainingTime <= 300) { // Less than 5 minutes - ORANGE
+                        sessionTimerElement.style.color = "#ffaa44";
+                        sessionTimerElement.style.fontWeight = "bold";
+                    } else {
+                        sessionTimerElement.style.color = "#fff";
+                        sessionTimerElement.style.fontWeight = "normal";
+                    }
+                }
+                
+                // Show warning at 1 minute
+                if (remainingTime === 60 && !warningShown) {
+                    warningShown = true;
+                    if (typeof Swal !== "undefined") {
+                        Swal.fire({
+                            title: "Session Expiring Soon",
+                            text: "Your session will expire in 1 minute due to inactivity. Any activity will extend your session.",
+                            icon: "warning",
+                            confirmButtonText: "OK"
+                        });
+                    } else {
+                        alert("Your session will expire in 1 minute due to inactivity.");
+                    }
+                }
+            }
+
+            function startTimer() {
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                }
+                
+                timerInterval = setInterval(function() {
+                    remainingTime--;
+                    
+                    if (remainingTime <= 0) {
+                        clearInterval(timerInterval);
+                        // Session expired - redirect to login
+                        if (typeof Swal !== "undefined") {
+                            Swal.fire({
+                                title: "Session Expired",
+                                text: "Your session has expired due to inactivity. Please log in again.",
+                                icon: "info",
+                                confirmButtonText: "Go to Login"
+                            }).then(function() {
+                                window.location.href = "/login";
+                            });
+                        } else {
+                            alert("Your session has expired due to inactivity.");
+                            window.location.href = "/login";
+                        }
+                        return;
+                    }
+                    
+                    updateTimerDisplay();
+                }, 1000);
+            }
+
+            function resetTimer() {
+                remainingTime = SESSION_TIMEOUT;
+                warningShown = false;
+                updateTimerDisplay();
+            }
+
+            // Activity detection - reset timer on user activity
+            var activityEvents = ["mousedown", "mousemove", "keypress", "scroll", "touchstart", "click"];
+            var activityTimeout = null;
+
+            function onActivity() {
+                // Debounce: only reset timer once per second max
+                if (activityTimeout) {
+                    return;
+                }
+                
+                activityTimeout = setTimeout(function() {
+                    activityTimeout = null;
+                }, 1000);
+                
+                resetTimer();
+            }
+
+            // Attach activity listeners
+            activityEvents.forEach(function(eventName) {
+                document.addEventListener(eventName, onActivity, true);
+            });
+
+            // Initialize timer
+            updateTimerDisplay();
+            startTimer();
+        })();
+    </script>
+    {{template "scripts" .}}
+</body>
+
+</html>
+{{ end }}
